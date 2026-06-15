@@ -1,0 +1,927 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>服务器 Docker 使用指南</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --text: #1e252f;
+      --muted: #627083;
+      --line: #dce2ea;
+      --brand: #16837a;
+      --brand-2: #255c99;
+      --warn: #b45c12;
+      --code-bg: #111827;
+      --code-text: #e7edf6;
+      --shadow: 0 14px 34px rgba(24, 39, 75, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", sans-serif;
+      line-height: 1.72;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 292px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    aside {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 28px 22px;
+      overflow-y: auto;
+      background: #0f172a;
+      color: #e5edf8;
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      background: #16837a;
+      color: #ffffff;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    .brand strong {
+      display: block;
+      font-size: 17px;
+      line-height: 1.25;
+    }
+
+    .brand span {
+      color: #9fb0c8;
+      font-size: 12px;
+    }
+
+    .toc-title {
+      margin: 24px 0 8px;
+      color: #9fb0c8;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    nav a {
+      display: block;
+      padding: 8px 10px;
+      border-radius: 7px;
+      color: #d7e0ee;
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    nav a:hover,
+    nav a.active {
+      background: rgba(255, 255, 255, 0.09);
+      color: #ffffff;
+    }
+
+    nav a.sub {
+      padding-left: 24px;
+      color: #b7c4d8;
+      font-size: 13px;
+    }
+
+    main {
+      min-width: 0;
+    }
+
+    .hero {
+      background:
+        linear-gradient(115deg, rgba(15, 23, 42, 0.92), rgba(22, 131, 122, 0.84)),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 620'%3E%3Crect width='1200' height='620' fill='%23111827'/%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='.14' stroke-width='2'%3E%3Cpath d='M180 430h840M240 360h720M300 290h600M360 220h480'/%3E%3Cpath d='M280 430v-70h120v70M500 430v-140h120v140M720 430v-210h120v210'/%3E%3Cpath d='M220 500c130-44 190-44 320 0s190 44 320 0 190-44 320 0'/%3E%3C/g%3E%3Cg fill='%232dd4bf' fill-opacity='.24'%3E%3Ccircle cx='910' cy='160' r='90'/%3E%3Ccircle cx='980' cy='210' r='42'/%3E%3C/g%3E%3C/svg%3E");
+      background-size: cover;
+      background-position: center;
+      color: #ffffff;
+      padding: 58px clamp(22px, 5vw, 72px) 38px;
+    }
+
+    .hero h1 {
+      max-width: 860px;
+      margin: 0 0 14px;
+      font-size: clamp(34px, 5vw, 58px);
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    .hero p {
+      max-width: 840px;
+      margin: 0;
+      color: #dbeafe;
+      font-size: 17px;
+    }
+
+    .quick-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      max-width: 980px;
+      margin-top: 28px;
+    }
+
+    .quick {
+      min-height: 98px;
+      padding: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(8px);
+    }
+
+    .quick b {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 15px;
+    }
+
+    .quick span {
+      color: #c8d6e8;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .content {
+      width: min(1120px, calc(100% - 44px));
+      margin: 0 auto;
+      padding: 34px 0 60px;
+    }
+
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 22px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: 0 8px 22px rgba(24, 39, 75, 0.06);
+      backdrop-filter: blur(10px);
+    }
+
+    .toolbar input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      color: var(--text);
+      font: inherit;
+      background: #ffffff;
+    }
+
+    .toolbar button,
+    .copy {
+      border: 0;
+      border-radius: 7px;
+      background: var(--brand);
+      color: #ffffff;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 700;
+    }
+
+    .toolbar button {
+      flex: 0 0 auto;
+      padding: 12px 14px;
+    }
+
+    section {
+      margin: 0 0 18px;
+      padding: 26px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      scroll-margin-top: 92px;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      font-size: 26px;
+      line-height: 1.22;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 24px 0 10px;
+      font-size: 19px;
+      line-height: 1.32;
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 0 0 13px;
+    }
+
+    ul,
+    ol {
+      margin-top: 8px;
+      padding-left: 22px;
+    }
+
+    li {
+      margin: 4px 0;
+    }
+
+    .note {
+      margin: 16px 0;
+      padding: 14px 16px;
+      border-left: 4px solid var(--brand-2);
+      border-radius: 6px;
+      background: #eef5ff;
+      color: #24415f;
+    }
+
+    .warn {
+      border-left-color: var(--warn);
+      background: #fff5e9;
+      color: #6f3c08;
+    }
+
+    .code-wrap {
+      position: relative;
+      margin: 14px 0 18px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--code-bg);
+    }
+
+    .code-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 9px 10px 9px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      color: #a7b4c8;
+      font-size: 12px;
+    }
+
+    .copy {
+      padding: 6px 10px;
+      background: #2d3b52;
+      font-size: 12px;
+    }
+
+    pre {
+      margin: 0;
+      padding: 16px;
+      overflow-x: auto;
+      color: var(--code-text);
+      font: 13px/1.65 Consolas, "Cascadia Mono", "Courier New", monospace;
+      tab-size: 2;
+    }
+
+    code {
+      font-family: Consolas, "Cascadia Mono", "Courier New", monospace;
+    }
+
+    :not(pre) > code {
+      padding: 2px 5px;
+      border-radius: 5px;
+      background: #edf1f7;
+      color: #1e3a5f;
+      font-size: 0.92em;
+    }
+
+    .steps {
+      display: grid;
+      gap: 12px;
+      counter-reset: step;
+    }
+
+    .step {
+      position: relative;
+      padding: 14px 16px 14px 50px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fafbfd;
+    }
+
+    .step::before {
+      counter-increment: step;
+      content: counter(step);
+      position: absolute;
+      left: 15px;
+      top: 15px;
+      display: grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 7px;
+      background: var(--brand);
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .pill-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
+      margin: 14px 0;
+    }
+
+    .pill {
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcfe;
+    }
+
+    .pill b {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--brand-2);
+    }
+
+    .icon-list {
+      columns: 2;
+      column-gap: 24px;
+    }
+
+    .icon-list li {
+      break-inside: avoid;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    footer {
+      padding: 0 0 34px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 13px;
+    }
+
+    @media (max-width: 980px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      aside {
+        position: static;
+        height: auto;
+      }
+
+      nav {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 4px;
+      }
+
+      nav a.sub {
+        padding-left: 10px;
+      }
+
+      .quick-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .hero {
+        padding: 36px 20px 28px;
+      }
+
+      .content {
+        width: calc(100% - 24px);
+      }
+
+      section {
+        padding: 20px 16px;
+      }
+
+      .toolbar {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .quick-grid,
+      nav {
+        grid-template-columns: 1fr;
+      }
+
+      .icon-list {
+        columns: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <div class="brand">
+        <div class="brand-mark">DO</div>
+        <div>
+          <strong>Docker 使用指南</strong>
+          <span>GPU 服务器环境速查</span>
+        </div>
+      </div>
+
+      <div class="toc-title">目录</div>
+      <nav id="toc">
+        <a href="#toolkit">安装 NVIDIA Container Toolkit</a>
+        <a href="#runtime">配置并重启 Docker 服务</a>
+        <a href="#run">常用 Docker 运行命令</a>
+        <a class="sub" href="#params">关键参数说明</a>
+        <a class="sub" href="#prompt">终端颜色自定义</a>
+        <a class="sub" href="#parse">Docker 解析逻辑</a>
+        <a href="#save">保存镜像</a>
+        <a class="sub" href="#commit">docker commit</a>
+        <a class="sub" href="#dockerfile">Dockerfile 构建</a>
+        <a class="sub" href="#build">build 命令</a>
+        <a href="#remove-container">删除容器</a>
+        <a href="#remove-image">删除镜像</a>
+        <a href="#security">安全加固</a>
+        <a class="sub" href="#daemon">守护进程配置</a>
+        <a class="sub" href="#wrapper">宿主机拦截脚本</a>
+        <a href="#reload">容器保存并重新加载</a>
+      </nav>
+    </aside>
+
+    <main>
+      <header class="hero">
+        <h1>服务器上 Docker 使用指南</h1>
+        <p>面向 GPU 服务器的 Docker 环境配置、运行命令、镜像保存、清理维护与安全加固速查文档。常用命令保留为可复制代码块，方便直接落地。</p>
+        <div class="quick-grid">
+          <div class="quick"><b>GPU 支持</b><span>安装 NVIDIA Container Toolkit，并生成 CDI 配置。</span></div>
+          <div class="quick"><b>运行模板</b><span>整理 vLLM、Hugging Face 缓存、用户映射等常用参数。</span></div>
+          <div class="quick"><b>镜像管理</b><span>覆盖 commit、Dockerfile、build、删除与导入导出。</span></div>
+          <div class="quick"><b>安全加固</b><span>限制提权、启用用户命名空间、拦截高危参数。</span></div>
+        </div>
+      </header>
+
+      <div class="content">
+        <div class="toolbar">
+          <input id="search" type="search" placeholder="搜索标题、说明或命令，例如 HF_HOME / docker build / userns-remap">
+          <button id="clearSearch" type="button">清空</button>
+        </div>
+
+        <section id="toolkit" data-search="安装 NVIDIA Container Toolkit apt Ubuntu Debian nvidia-container-toolkit">
+          <h2>安装 NVIDIA Container Toolkit</h2>
+          <p>官方安装文档：<a href="https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html">NVIDIA Container Toolkit Install Guide</a></p>
+          <div class="note">以下流程适用于 Ubuntu、Debian 以及常见 Debian 衍生发行版。</div>
+
+          <h3>安装基础依赖</h3>
+          <div class="code-wrap">
+            <div class="code-head"><span>bash</span><button class="copy" type="button">复制</button></div>
+            <pre><code>sudo apt-get update && sudo apt-get install -y --no-install-recommends \
+   ca-certificates \
+   curl \
+   gnupg2</code></pre>
+          </div>
+
+          <h3>添加 NVIDIA 软件源</h3>
+          <div class="code-wrap">
+            <div class="code-head"><span>bash</span><button class="copy" type="button">复制</button></div>
+            <pre><code>distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
+   && curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add - \
+   && curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list</code></pre>
+          </div>
+
+          <h3>配置稳定版本仓库</h3>
+          <div class="code-wrap">
+            <div class="code-head"><span>bash</span><button class="copy" type="button">复制</button></div>
+            <pre><code>curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
+  && curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
+    sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+    sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list</code></pre>
+          </div>
+
+          <h3>可选：启用 experimental 包</h3>
+          <div class="code-wrap">
+            <div class="code-head"><span>bash</span><button class="copy" type="button">复制</button></div>
+            <pre><code>sudo sed -i -e '/experimental/ s/^#//g' /etc/apt/sources.list.d/nvidia-container-toolkit.list</code></pre>
+          </div>
+
+          <h3>更新并安装指定版本</h3>
+          <div class="code-wrap">
+            <div class="code-head"><span>bash</span><button class="copy" type="button">复制</button></div>
+            <pre><code>sudo apt-get update</code></pre>
+          </div>
+          <div class="code-wrap">
+            <div class="code-head"><span>bash</span><button class="copy" type="button">复制</button></div>
+            <pre><code>export NVIDIA_CONTAINER_TOOLKIT_VERSION=1.19.1-1
+sudo apt-get install -y \
+  nvidia-container-toolkit=${NVIDIA_CONTAINER_TOOLKIT_VERSION} \
+  nvidia-container-toolkit-base=${NVIDIA_CONTAINER_TOOLKIT_VERSION} \
+  libnvidia-container-tools=${NVIDIA_CONTAINER_TOOLKIT_VERSION} \
+  libnvidia-container1=${NVIDIA_CONTAINER_TOOLKIT_VERSION}</code></pre>
+          </div>
+        </section>
+
+        <section id="runtime" data-search="配置 重启 Docker 服务 nvidia-ctk runtime CDI Blackwell systemctl restart">
+          <h2>配置并重启 Docker 服务</h2>
+          <p>让 Docker 重新加载 NVIDIA 运行时和 CDI 配置。</p>
+          <div class="steps">
+            <div class="step">
+              <strong>自动配置 Docker 运行时</strong>
+              <div class="code-wrap">
+                <div class="code-head"><span>bash</span><button class="copy" type="button">复制</button></div>
+                <pre><code>sudo nvidia-ctk runtime configure --runtime=docker</code></pre>
+              </div>
+            </div>
+            <div class="step">
+              <strong>生成新版 Docker 识别 Blackwell 显卡所需的 CDI 配置文件</strong>
+              <div class="code-wrap">
+                <div class="code-head"><span>bash</span><button class="copy" type="button">复制</button></div>
+                <pre><code>sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml</code></pre>
+              </div>
+            </div>
+            <div class="step">
+              <strong>重启 Docker 服务让配置生效</strong>
+              <div class="code-wrap">
+                <div class="code-head"><span>bash</span><button class="copy" type="button">复制</button></div>
+                <pre><code>sudo systemctl restart docker</code></pre>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="run" data-search="常用 Docker 运行命令 docker run gpus entrypoint hdd hdd2 huggingface baichuan vllm shm memory">
+          <h2>常用 Docker 运行命令</h2>
+          <p>所有桥梁都搭建完毕后，可以按需选择下面的运行模板。</p>
+
+          <h3>vLLM nightly 基础进入命令</h3>
+          <div class="code-wrap">
+            <div class="code-head"><span>bash</span><button class="copy" type="button">复制</button></div>
+            <pre><code>docker run -it --entrypoint /bin/bash --gpus all \
+  -u $(id -u):$(id -g) \
+  -v /hdd:/hdd \
+  -v /hdd2:/hdd2 \
+  -v /home/yanggang/.cache/huggingface:/root/.cache/huggingface \
+  vllm/vllm-openai:nightly-x86_64</code></pre>
+          </div>
+
+          <h3>带用户识别与 Hugging Face 缓存映射</h3>
+          <div class="code-wrap">
+            <div class="code-head"><span>bash</span><button class="copy" type="button">复制</button></div>
+            <pre><code>docker run -it \
+  --entrypoint /bin/bash \
+  --gpus all \
+  -e NVIDIA_DISABLE_REQUIRE=true \
+  -u $(id -u):$(id -g) \
+  -v /etc/passwd:/etc/passwd:ro \
+  -v /etc/group:/etc/group:ro \
+  -v /hdd:/hdd \
+  -v /hdd2:/hdd2 \
+  -v /hdd/.cache/huggingface:/root/.cache/huggingface \
+  --env HF_HOME=/root/.cache/huggingface \
+  baichuan-env:v1</code></pre>
+          </div>
+
+          <h3>把 HOME 与 HF_HOME 显式放到 /hdd</h3>
+          <div class="code-wrap">
+            <div class="code-head"><span>bash</span><button class="copy" type="button">复制</button></div>
+            <pre><code>docker run -it \
+  --entrypoint /bin/bash \
+  --gpus all \
+  -e NVIDIA_DISABLE_REQUIRE=true \
+  -u $(id -u):$(id -g) \
+  -v /etc/passwd:/etc/passwd:ro \
+  -v /etc/group:/etc/group:ro \
+  -v /hdd:/hdd \
+  -v /hdd2:/hdd2 \
+  -e HOME=/hdd \
+  --env HF_HOME=/hdd/huggingface \
+  baichuan-env:v1</code></pre>
+          </div>
+
+          <h3>带共享内存、内存限制与自定义提示符</h3>
+          <div class="code-wrap">
+            <div class="code-head"><span>bash</span><button class="copy" type="button">复制</button></div>
+            <pre><code>docker run -it \
+  --entrypoint /bin/bash \
+  --gpus all \
+  -u $(id -u):$(id -g) \
+  -v /etc/passwd:/etc/passwd:ro \
+  -v /etc/group:/etc/group:ro \
+  -v /hdd:/hdd \
+  -v /hdd2:/hdd2 \
+  -e HOME=/hdd/DockerHome/yanggang \
+  --env HF_HOME=/hdd/huggingface \
+  --shm-size=64g \
+  --memory=128g \
+  baichuan-env:v1 \
+  -c '/bin/bash --rcfile &lt;(echo "export PS1=\"\[\033[01;32m\][🐉 DOCKER-ENV]\[\033[00m\] \u@\h:\w\\$ \"")'</code></pre>
+          </div>
+        </section>
+
+        <section id="params" data-search="关键参数说明 uid gid passwd group HF_HOME root NVIDIA_DISABLE_REQUIRE Permission denied">
+          <h2>关键参数说明</h2>
+          <div class="pill-grid">
+            <div class="pill"><b><code>-u $(id -u):$(id -g)</code></b>让容器内进程以当前普通用户身份运行。</div>
+            <div class="pill"><b><code>-v /etc/passwd:/etc/passwd:ro</code></b>让容器内部正确识别用户名，避免显示 <code>I have no name!</code>。</div>
+            <div class="pill"><b><code>--env HF_HOME=...</code></b>指定模型权重下载目录，避免写入虚拟 <code>/root</code> 时出现权限错误。</div>
+            <div class="pill"><b><code>-e NVIDIA_DISABLE_REQUIRE=true</code></b>让 Docker 忽略部分驱动版本要求并尝试强制启动。</div>
+          </div>
+        </section>
+
+        <section id="prompt" data-search="终端颜色 自定义 PS1 31m 32m 33m 图标 DOCKER-ENV">
+          <h2>终端颜色自定义</h2>
+          <p>如果想更换 Docker 环境提示符颜色，修改命令最后一行里的颜色码即可。</p>
+          <div class="pill-grid">
+            <div class="pill"><b>31m</b>红色</div>
+            <div class="pill"><b>32m</b>绿色</div>
+            <div class="pill"><b>33m</b>黄色</div>
+            <div class="pill"><b>34m</b>蓝色</div>
+            <div class="pill"><b>35m</b>紫色</div>
+            <div class="pill"><b>36m</b>青色</div>
+            <div class="pill"><b>37m</b>白色</div>
+            <div class="pill"><b>01;</b>加粗或高亮</div>
+          </div>
+
+          <h3>可选图标</h3>
+          <ul class="icon-list">
+            <li>🤖 机器人 -> <code>[🤖 DOCKER-ENV]</code></li>
+            <li>🧠 大脑 -> <code>[🧠 DOCKER-ENV]</code></li>
+            <li>🔮 水晶球 -> <code>[🔮 DOCKER-ENV]</code></li>
+            <li>⚡ 闪电 -> <code>[⚡ DOCKER-ENV]</code></li>
+            <li>🔥 火焰 -> <code>[🔥 DOCKER-ENV]</code></li>
+            <li>⚙️ 齿轮 -> <code>[⚙️ DOCKER-ENV]</code></li>
+            <li>🚀 火箭 -> <code>[🚀 DOCKER-ENV]</code></li>
+            <li>🐳 Docker 容器 -> <code>[🐳 DOCKER-ENV]</code></li>
+            <li>🐍 Python 环境 -> <code>[🐍 DOCKER-ENV]</code></li>
+            <li>🐉 大模型与强算力 -> <code>[🐉 DOCKER-ENV]</code></li>
+            <li>🦄 神秘环境 -> <code>[🦄 DOCKER-ENV]</code></li>
+            <li>🔒 安全隔离 -> <code>[🔒 DOCKER-ENV]</code></li>
+            <li>🧱 严格隔离 -> <code>[🧱 DOCKER-ENV]</code></li>
+            <li>🛡️ 受保护沙盒 -> <code>[🛡️ DOCKER-ENV]</code></li>
+            <li>📦 Container 箱子 -> <code>[📦 DOCKER-ENV]</code></li>
+            <li>🧪 实验环境 -> <code>[🧪 DOCKER-ENV]</code></li>
+            <li>📊 训练指标 -> <code>[📊 DOCKER-ENV]</code></li>
+            <li>🧮 大规模计算 -> <code>[🧮 DOCKER-ENV]</code></li>
+          </ul>
+        </section>
+
+        <section id="parse" data-search="Docker 解析逻辑 OPTIONS IMAGE COMMAND ARG entrypoint bash">
+          <h2>Docker 解析逻辑</h2>
+          <ul>
+            <li><code>docker run [OPTIONS]</code>：前面的 <code>-v</code>、<code>-e</code>、<code>--shm-size</code> 都是配置项。</li>
+            <li><code>IMAGE</code>：例如 <code>baichuan-env:v1</code> 是分界线，表示配置结束，接下来加载这个镜像。</li>
+            <li><code>[COMMAND] [ARG...]</code>：镜像名后面的 <code>-c '/bin/bash ...'</code> 会被识别为命令。因为前面指定了 <code>--entrypoint /bin/bash</code>，最终执行的是 <code>/bin/bash -c '/bin/bash --rcfile ...'</code>。</li>
+          </ul>
+        </section>
+
+        <section id="save" data-search="保存镜像 docker commit Dockerfile build images my-pytorch">
+          <h2>保存镜像</h2>
+          <p>常见方式有三种：快速保存当前容器、用 Dockerfile 规范构建、用 build 命令生成新镜像。</p>
+
+          <h3 id="commit">方法一：使用 docker commit 保存镜像</h3>
+          <div class="steps">
+            <div class="step">
+              <strong>查看容器 ID</strong>
+              <p>在宿主机终端运行以下命令，找到正在修改的容器 <code>CONTAINER ID</code>。</p>
+              <div class="code-wrap">
+                <div class="code-head"><span>bash</span><button class="copy" type="button">复制</button></div>
+                <pre><code>docker ps
+docker ps -a</code></pre>
+              </div>
+            </div>
+            <div class="step">
+              <strong>执行 commit 保存</strong>
+              <div class="code-wrap">
+                <div class="code-head"><span>bash</span><button class="copy" type="button">复制</button></div>
+                <pre><code>docker commit &lt;容器ID&gt; &lt;新镜像名称&gt;:&lt;版本标签&gt;</code></pre>
+              </div>
+              <div class="code-wrap">
+                <div class="code-head"><span>bash 示例</span><button class="copy" type="button">复制</button></div>
+                <pre><code>docker commit a1b2c3d4e5f6 my-pytorch:v1</code></pre>
+              </div>
+            </div>
+            <div class="step">
+              <strong>验证与使用</strong>
+              <div class="code-wrap">
+                <div class="code-head"><span>bash</span><button class="copy" type="button">复制</button></div>
+                <pre><code>docker images
+docker run -it my-pytorch:v1 /bin/bash</code></pre>
+              </div>
+            </div>
+          </div>
+
+          <h3 id="dockerfile">方法二：Dockerfile 构建（推荐）</h3>
+          <p><code>docker commit</code> 很方便，但它是一个“黑盒”。更规范的做法是把修改步骤写入 <code>Dockerfile</code>，让 Docker 自动构建。</p>
+          <div class="code-wrap">
+            <div class="code-head"><span>Dockerfile</span><button class="copy" type="button">复制</button></div>
+            <pre><code># 1. 指定基础镜像
+FROM pytorch/pytorch:2.8.0-cuda12.6-cudnn9-runtime
+
+# 2. 设置工作目录
+WORKDIR /workspace
+
+# 3. 写入环境安装命令
+RUN pip install --no-cache-dir pandas scikit-learn
+
+# 4. 安装系统工具
+RUN apt-get update && apt-get install -y tmux</code></pre>
+          </div>
+
+          <h3 id="build">方法三：运行 build 命令生成新镜像</h3>
+          <p>在 <code>Dockerfile</code> 所在目录下执行。末尾的点 <code>.</code> 表示当前目录。</p>
+          <div class="code-wrap">
+            <div class="code-head"><span>bash</span><button class="copy" type="button">复制</button></div>
+            <pre><code>docker build -t my-pytorch:v2 .</code></pre>
+          </div>
+        </section>
+
+        <section id="remove-container" data-search="删除容器 docker ps stop rm container prune">
+          <h2>删除容器</h2>
+          <p>先查看状态，运行中的容器需要先停止，再删除。</p>
+          <div class="code-wrap">
+            <div class="code-head"><span>bash</span><button class="copy" type="button">复制</button></div>
+            <pre><code>docker ps -a
+docker stop &lt;container_id&gt;
+docker rm &lt;container_id&gt;</code></pre>
+          </div>
+          <p>如果需要批量删除所有已停止的容器：</p>
+          <div class="code-wrap">
+            <div class="code-head"><span>bash</span><button class="copy" type="button">复制</button></div>
+            <pre><code>docker container prune</code></pre>
+          </div>
+        </section>
+
+        <section id="remove-image" data-search="删除镜像 docker images rmi image prune force">
+          <h2>删除镜像</h2>
+          <div class="code-wrap">
+            <div class="code-head"><span>bash</span><button class="copy" type="button">复制</button></div>
+            <pre><code>docker images
+docker rmi &lt;image_id&gt;</code></pre>
+          </div>
+          <p>如果镜像被容器占用，需要先停止并删除相关容器。强制删除不推荐，但命令如下：</p>
+          <div class="code-wrap">
+            <div class="code-head"><span>bash</span><button class="copy" type="button">复制</button></div>
+            <pre><code>docker rmi -f &lt;image_id&gt;</code></pre>
+          </div>
+          <div class="note warn">删除前确认没有重要容器依赖该镜像；使用 <code>-f</code> 时尤其谨慎。</div>
+        </section>
+
+        <section id="security" data-search="安全加固 daemon json no-new-privileges userns-remap live-restore wrapper privileged host network pid">
+          <h2>安全加固</h2>
+          <p>这里整理两道防线：从 Docker 守护进程层面限制提权，再通过宿主机 wrapper 脚本拦截高危参数。</p>
+
+          <h3 id="daemon">第一道防线：Docker 守护进程配置</h3>
+          <p>直接修改宿主机 Docker 配置文件 <code>/etc/docker/daemon.json</code>，从底层锁住高危行为。</p>
+          <div class="code-wrap">
+            <div class="code-head"><span>json</span><button class="copy" type="button">复制</button></div>
+            <pre><code>{
+  "no-new-privileges": true,
+  "userns-remap": "default",
+  "live-restore": true
+}</code></pre>
+          </div>
+          <div class="code-wrap">
+            <div class="code-head"><span>bash</span><button class="copy" type="button">复制</button></div>
+            <pre><code>sudo systemctl restart docker</code></pre>
+          </div>
+
+          <div class="pill-grid">
+            <div class="pill"><b><code>no-new-privileges</code></b>禁止容器内进程获得比当前更多的特权，降低 SUID 或漏洞提权风险。</div>
+            <div class="pill"><b><code>userns-remap</code></b>把容器内 root 映射为宿主机普通用户，降低乱挂载敏感目录后的破坏能力。</div>
+            <div class="pill"><b><code>live-restore</code></b>Docker 守护进程重启时，后台运行容器仍可保持运行。</div>
+          </div>
+
+          <h3 id="wrapper">第二道防线：宿主机拦截脚本</h3>
+          <p>编写 Docker wrapper，放到 <code>/usr/local/bin/docker</code>，利用环境变量优先级在用户输入命令时先做安全审查。</p>
+          <div class="code-wrap">
+            <div class="code-head"><span>bash</span><button class="copy" type="button">复制</button></div>
+            <pre><code>sudo vim /usr/local/bin/docker</code></pre>
+          </div>
+          <div class="code-wrap">
+            <div class="code-head"><span>bash wrapper</span><button class="copy" type="button">复制</button></div>
+            <pre><code>#!/bin/bash
+
+# 定义禁止使用的危险参数黑名单
+BLACKLIST=("--privileged" "--net=host" "--net host" "--pid=host" "--pid host")
+
+# 检查用户输入的参数中是否包含黑名单内容
+for arg in "$@"; do
+  for banned in "${BLACKLIST[@]}"; do
+    if [[ "$arg" == *"$banned"* ]]; then
+      echo "安全错误: 检测到高危参数 [$banned]，已被系统拒绝启动！"
+      echo "提示：普通用户禁止使用特权模式、主机网络及主机进程共享。"
+      exit 1
+    fi
+  done
+done
+
+# 如果通过检查，调用真正的 Docker 执行
+exec /usr/bin/docker "$@"</code></pre>
+          </div>
+          <div class="code-wrap">
+            <div class="code-head"><span>bash</span><button class="copy" type="button">复制</button></div>
+            <pre><code>sudo chmod +x /usr/local/bin/docker</code></pre>
+          </div>
+          <div class="note">效果：当 Docker 组用户尝试运行 <code>docker run --privileged ...</code> 时，脚本会第一时间切断请求，避免传给 Docker 后台。</div>
+        </section>
+
+        <section id="reload" data-search="容器保存 重新加载 docker save load 安全模式 旧镜像">
+          <h2>容器保存并重新加载</h2>
+          <p>如果是老服务器中途开启安全模式，通常可以按下面流程迁移镜像。</p>
+          <div class="steps">
+            <div class="step">临时关闭安全模式。</div>
+            <div class="step">将需要的旧镜像导出为文件。</div>
+            <div class="code-wrap">
+              <div class="code-head"><span>bash</span><button class="copy" type="button">复制</button></div>
+              <pre><code>docker save -o my_image.tar pytorch/pytorch:xxxx</code></pre>
+            </div>
+            <div class="step">开启安全模式，重新加上参数并重启 Docker。</div>
+            <div class="step">将镜像导入到安全模式的新目录中。</div>
+            <div class="code-wrap">
+              <div class="code-head"><span>bash</span><button class="copy" type="button">复制</button></div>
+              <pre><code>docker load -i my_image.tar</code></pre>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <footer>由本地 Markdown 文档整理生成 · 单文件静态网页</footer>
+    </main>
+  </div>
+
+  <script>
+    const copyButtons = document.querySelectorAll(".copy");
+    copyButtons.forEach((button) => {
+      button.addEventListener("click", async () => {
+        const code = button.closest(".code-wrap").querySelector("code").innerText;
+        await navigator.clipboard.writeText(code);
+        const old = button.textContent;
+        button.textContent = "已复制";
+        setTimeout(() => {
+          button.textContent = old;
+        }, 1200);
+      });
+    });
+
+    const search = document.getElementById("search");
+    const clearSearch = document.getElementById("clearSearch");
+    const sections = Array.from(document.querySelectorAll("section"));
+
+    function runSearch() {
+      const query = search.value.trim().toLowerCase();
+      sections.forEach((section) => {
+        const haystack = `${section.innerText} ${section.dataset.search || ""}`.toLowerCase();
+        section.classList.toggle("hidden", query.length > 0 && !haystack.includes(query));
+      });
+    }
+
+    search.addEventListener("input", runSearch);
+    clearSearch.addEventListener("click", () => {
+      search.value = "";
+      runSearch();
+      search.focus();
+    });
+
+    const links = Array.from(document.querySelectorAll("nav a"));
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries
+        .filter((entry) => entry.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (!visible) return;
+      links.forEach((link) => {
+        link.classList.toggle("active", link.getAttribute("href") === `#${visible.target.id}`);
+      });
+    }, { rootMargin: "-20% 0px -65% 0px", threshold: [0.1, 0.35, 0.7] });
+
+    sections.forEach((section) => observer.observe(section));
+  </script>
+</body>
+</html>
