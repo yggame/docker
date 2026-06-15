@@ -588,7 +588,7 @@ sudo apt-get install -y \
   -u $(id -u):$(id -g) \
   -v /hdd:/hdd \
   -v /hdd2:/hdd2 \
-  -v /home/yanggang/.cache/huggingface:/root/.cache/huggingface \
+  -v /home/your_user/.cache/huggingface:/root/.cache/huggingface \
   vllm/vllm-openai:nightly-x86_64</code></pre>
           </div>
 
@@ -637,7 +637,7 @@ sudo apt-get install -y \
   -v /etc/group:/etc/group:ro \
   -v /hdd:/hdd \
   -v /hdd2:/hdd2 \
-  -e HOME=/hdd/DockerHome/yanggang \
+  -e HOME=/hdd/DockerHome/your_user \
   --env HF_HOME=/hdd/huggingface \
   --shm-size=64g \
   --memory=128g \
